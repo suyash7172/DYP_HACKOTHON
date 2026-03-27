@@ -1,8 +1,112 @@
 all information
  Problem Statement
+Financial fraud is increasing rapidly with the growth of digital payments. Traditional systems struggle to detect fraud in real-time and lack transparency in handling suspicious transactions.
+
+Key challenges include:
+
+ Delayed fraud detection
+ Lack of real-time monitoring
+ Data tampering risks
+ Limited transparency in transaction logs
+ Difficulty in identifying complex fraud patterns
+
+
 • Solution Overview
+
+SecurePay AI is a full-stack web application that combines Artificial Intelligence and Blockchain to provide a secure and intelligent fraud detection system.
+
+ How it works:
+User inputs transaction data (amount, location, device, etc.)
+AI model analyzes the transaction in real-time
+System generates:
+Fraud probability score
+Risk level (Low / Medium / High)
+If fraud is detected:
+Alert is triggered
+Transaction is stored on blockchain
+Dashboard displays analytics and insights
+
+
 • Tech Stack Used
+
+Angular
+Chart.js
+⚙️ Backend
+Python (Flask)
+REST APIs
+JWT Authentication
+🗄️ Database
+Firebase Firestore
+🤖 AI/ML
+scikit-learn
+TensorFlow
+Isolation Forest
+Logistic Regression
+🔗 Blockchain
+Ethereum / Polygon Testnet
+Solidity (Smart Contracts)
+Ethers.js / Web3.js
+⚙️ Setup Instructions
+1️⃣ Clone the Repository
+git clone https://github.com/your-username/securepay-ai.git
+cd securepay-ai
+2️⃣ Backend Setup (Flask)
+cd backend
+pip install -r requirements.txt
+python app.py
+3️⃣ Frontend Setup (Angular)
+cd frontend
+npm install
+ng serve
+4️⃣ AI Model Setup
+cd ml-model
+python train_model.py
+5️⃣ Blockchain Setup
+cd blockchain
+npm install
+npx hardhat compile
+npx hardhat run scripts/deploy.js --network testnet
+6️⃣ Firebase Configuration
+
+Add your Firebase config in the frontend:
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCuBxOgLIXHT54Q6oTO06fFohugieAYsiI",
+  authDomain: "ai-blockchain-9c14e.firebaseapp.com",
+  projectId: "ai-blockchain-9c14e",
+  storageBucket: "ai-blockchain-9c14e.firebasestorage.app",
+  messagingSenderId: "917986154808",
+  appId: "1:917986154808:web:b2dfa851558e0c4fa889cd",
+  measurementId: "G-Q7K04VP0EK"
+};
+
+ Run the Application
+Frontend: http://localhost:4200
+Backend API: http://localhost:5000
+ Output
+Real-time fraud detection
+Risk-based alerts
+Blockchain-secured transaction logs
+Interactive analytics dashboard
+
+If you want, I can also make this more attractive (with badges, screenshots, GitHub styling) or create a 1-page PPT from this 
+
+
+
 • Setup Instructions
+
+SecurePay AI is a full-stack web application that combines Artificial Intelligence and Blockchain to provide a secure and intelligent fraud detection system.
+
+
+User inputs transaction data (amount, location, device, etc.)
+AI model analyzes the transaction in real-time
+System generates:
+Fraud probability score
+Risk level (Low / Medium / High)
+If fraud is detected:
+ Alert is triggered
+ Transaction is stored on blockchain
+Dashboard displays analytics and insights
 • Team Member Names - 
    1.Suyash Jori
    2.Om Samadhan Gaikwad
