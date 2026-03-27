@@ -2,6 +2,7 @@ import { Component, OnInit, AfterViewInit, ElementRef, ViewChild } from '@angula
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 import Chart from 'chart.js/auto';
 
 @Component({
@@ -12,15 +13,19 @@ import Chart from 'chart.js/auto';
     <div class="dashboard">
       <div class="page-header">
         <div>
-          <h1>Dashboard Overview</h1>
-          <p>Real-time fraud monitoring and analytics</p>
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+            <h1>Dashboard Overview</h1>
+            <span *ngIf="!isAdmin" class="badge badge-pending">Analyst Mode</span>
+          </div>
+          <p *ngIf="isAdmin">Real-time fraud monitoring and full system analytics.</p>
+          <p *ngIf="!isAdmin">Transaction review and alert anomaly management.</p>
         </div>
         <div class="header-actions">
           <button class="btn btn-secondary" (click)="refreshData()">
             <span class="material-icons-outlined" [class.spin]="loading">refresh</span>
             Refresh
           </button>
-          <button class="btn btn-primary" (click)="simulateAndAnalyze()" [disabled]="loading">
+          <button *ngIf="isAdmin" class="btn btn-primary" (click)="simulateAndAnalyze()" [disabled]="loading">
             <span class="material-icons-outlined">play_arrow</span>
             Simulate + Analyze
           </button>
@@ -348,7 +353,11 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
   private charts: Chart[] = [];
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private auth: AuthService) {}
+
+  get isAdmin(): boolean {
+    return this.auth.isAdmin;
+  }
 
   ngOnInit() {
     this.loadData();

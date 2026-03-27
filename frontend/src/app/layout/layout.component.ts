@@ -48,11 +48,11 @@ import { ChatbotComponent } from '../components/chatbot/chatbot.component';
           
           <div class="nav-section">
             <div class="nav-label" *ngIf="!sidebarCollapsed">SECURITY</div>
-            <a routerLink="/blockchain" routerLinkActive="active" class="nav-item" [attr.title]="sidebarCollapsed ? 'Blockchain' : null">
+            <a *ngIf="isAdmin" routerLink="/blockchain" routerLinkActive="active" class="nav-item" [attr.title]="sidebarCollapsed ? 'Blockchain' : null">
               <span class="material-icons-outlined">link</span>
               <span class="nav-text" *ngIf="!sidebarCollapsed">Blockchain</span>
             </a>
-            <a routerLink="/analytics" routerLinkActive="active" class="nav-item" [attr.title]="sidebarCollapsed ? 'Analytics' : null">
+            <a *ngIf="isAdmin" routerLink="/analytics" routerLinkActive="active" class="nav-item" [attr.title]="sidebarCollapsed ? 'Analytics' : null">
               <span class="material-icons-outlined">analytics</span>
               <span class="nav-text" *ngIf="!sidebarCollapsed">Analytics</span>
             </a>
@@ -379,6 +379,10 @@ export class LayoutComponent {
   sidebarCollapsed = false;
 
   constructor(public authService: AuthService, private router: Router) {}
+
+  get isAdmin(): boolean {
+    return this.authService.isAdmin;
+  }
 
   getUserInitials(): string {
     const name = this.authService.currentUser?.name || 'U';

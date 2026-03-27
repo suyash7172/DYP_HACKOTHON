@@ -43,6 +43,14 @@ export class AuthService {
     return localStorage.getItem('access_token');
   }
 
+  get isAdmin(): boolean {
+    return this.currentUser?.role === 'admin';
+  }
+
+  get isAnalyst(): boolean {
+    return this.currentUser?.role === 'analyst';
+  }
+
   login(email: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, { email, password }).pipe(
       tap(res => {
