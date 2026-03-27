@@ -1,0 +1,75 @@
+<div class="analytics-page">
+  <div class="page-header">
+    <div>
+      <h1>Fraud Analytics</h1>
+      <p>Deep insights into fraud patterns and trends</p>
+    </div>
+    <button class="btn btn-secondary" (click)="refreshData()">
+      <span class="material-icons-outlined">refresh</span> Refresh
+    </button>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading analytics...</p>
+  </div>
+
+  <div *ngIf="!loading">
+    <div class="grid-3 mb-32">
+      <div class="insight-card animate-in">
+        <div class="insight-icon location"><span class="material-icons-outlined">location_on</span></div>
+        <h3>Location Anomaly</h3>
+        <p>Top suspicious: <strong>{{ topLocation }}</strong></p>
+        <div class="insight-bar"><div class="insight-fill" [style.width.%]="locationPercent"></div></div>
+        <span class="insight-percent">{{ locationPercent.toFixed(0) }}% of frauds</span>
+      </div>
+      <div class="insight-card animate-in">
+        <div class="insight-icon time"><span class="material-icons-outlined">schedule</span></div>
+        <h3>Time Anomaly</h3>
+        <p>Peak fraud hour: <strong>{{ peakFraudHour }}</strong></p>
+        <div class="insight-bar"><div class="insight-fill yellow" [style.width.%]="timePercent"></div></div>
+        <span class="insight-percent">{{ peakFraudCount }} incidents</span>
+      </div>
+      <div class="insight-card animate-in">
+        <div class="insight-icon spending"><span class="material-icons-outlined">trending_up</span></div>
+        <h3>Spending Behavior</h3>
+        <p>Avg fraud amount: <strong>${{ avgFraudAmount.toFixed(0) }}</strong></p>
+        <div class="insight-bar"><div class="insight-fill purple" [style.width.%]="spendingPercent"></div></div>
+        <span class="insight-percent">{{ spendingPercent.toFixed(0) }}% above normal</span>
+      </div>
+    </div>
+
+    <div class="grid-2 mb-32">
+      <div class="card animate-in">
+        <div class="card-header"><h3>🌍 Fraud by Location</h3></div>
+        <div class="chart-container"><canvas #locationChart></canvas></div>
+      </div>
+      <div class="card animate-in">
+        <div class="card-header"><h3>💰 Amount Distribution</h3></div>
+        <div class="chart-container"><canvas #amountChart></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card animate-in">
+        <div class="card-header"><h3>⏰ Hourly Fraud Heatmap</h3></div>
+        <div class="heatmap-container">
+          <div class="heatmap-row">
+            <span class="heatmap-label">Fraud Activity</span>
+            <div class="heatmap-cells">
+              <div class="heatmap-cell" *ngFor="let val of hourlyFraud; let i = index"
+                   [style.background]="getHeatColor(val)" [title]="i + ':00 - ' + val + ' incidents'"></div>
+            </div>
+          </div>
+          <div class="heatmap-hours">
+            <span *ngFor="let h of [0,3,6,9,12,15,18,21]">{{ h }}h</span>
+          </div>
+        </div>
+      </div>
+      <div class="card animate-in">
+        <div class="card-header"><h3>📊 Category Breakdown</h3></div>
+        <div class="chart-container"><canvas #categoryPolarChart></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>

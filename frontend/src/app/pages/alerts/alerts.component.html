@@ -1,0 +1,48 @@
+<div class="alerts-page">
+  <div class="page-header">
+    <div>
+      <h1>Alerts & Notifications</h1>
+      <p>{{ unreadCount }} unread alerts</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="loadAlerts()">
+        <span class="material-icons-outlined">refresh</span> Refresh
+      </button>
+      <button class="btn btn-primary" (click)="markAllRead()" *ngIf="unreadCount > 0">
+        <span class="material-icons-outlined">done_all</span> Mark All Read
+      </button>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="alerts-list" *ngIf="!loading">
+    <div class="alert-item" *ngFor="let alert of alerts"
+         [class.unread]="!alert.is_read"
+         [class.severity-critical]="alert.severity === 'critical'"
+         [class.severity-high]="alert.severity === 'high'">
+      <div class="alert-icon" [ngClass]="'icon-' + alert.severity">
+        <span class="material-icons-outlined">{{ getSeverityIcon(alert.severity) }}</span>
+      </div>
+      <div class="alert-content">
+        <div class="alert-header-row">
+          <span class="badge" [ngClass]="'badge-' + alert.severity">{{ alert.severity }}</span>
+          <span class="alert-type">{{ alert.type === 'ai_detection' ? 'AI Detection' : 'Manual Flag' }}</span>
+        </div>
+        <p class="alert-message">{{ alert.message }}</p>
+        <span class="alert-time">{{ getTimeAgo(alert.created_at) }}</span>
+      </div>
+      <button class="btn-ghost" (click)="markRead(alert.id)" *ngIf="!alert.is_read" title="Mark as read">
+        <span class="material-icons-outlined">check_circle_outline</span>
+      </button>
+    </div>
+
+    <div class="empty-state" *ngIf="!alerts.length">
+      <span class="material-icons-outlined icon">notifications_off</span>
+      <h3>No alerts</h3>
+      <p>Run fraud detection to generate alerts</p>
+    </div>
+  </div>
+</div>
