@@ -11,6 +11,13 @@ import uuid
 import random
 from datetime import datetime, timedelta
 
+def get_firebase_sync():
+    try:
+        from firebase_client import get_firebase_sync as _get_sync
+        return _get_sync()
+    except Exception:
+        return None
+
 transactions_bp = Blueprint('transactions', __name__)
 db = get_db()
 
@@ -93,6 +100,13 @@ def create_transaction():
         
         db.collection('transactions').document(transaction_id).set(transaction)
         
+        sync = get_firebase_sync()
+        if sync:
+            try:
+                sync.sync_transaction(transaction)
+            except Exception:
+                pass
+        
         return jsonify({
             'message': 'Transaction created',
             'transaction': transaction
@@ -157,6 +171,14 @@ def simulate_transactions():
             
             db.collection('transactions').document(transaction_id).set(transaction)
             transactions.append(transaction)
+            
+        sync = get_firebase_sync()
+        if sync:
+            for tx in transactions:
+                try:
+                    sync.sync_transaction(tx)
+                except Exception:
+                    pass
         
         return jsonify({
             'message': f'{count} transactions simulated',

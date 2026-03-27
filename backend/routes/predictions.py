@@ -1,5 +1,6 @@
 """
 ML Prediction Routes - Real-time fraud detection with CSV upload support
+Optimized for speed and Firebase persistence
 """
 
 from flask import Blueprint, request, jsonify
@@ -41,7 +42,7 @@ def load_models():
 # Try loading models on import
 load_models()
 
-# Category and location risk mappings
+# Category and location risk mappings (cached for speed)
 CATEGORY_RISK = {
     'Crypto Exchange': 0.9, 'Gambling': 0.85, 'Wire Transfer': 0.7,
     'Luxury Goods': 0.6, 'ATM Withdrawal': 0.5, 'Online Shopping': 0.4,
@@ -58,56 +59,50 @@ LOCATION_RISK = {
     'Tokyo, Japan': 0.1, 'Sydney, Australia': 0.1, 'Toronto, Canada': 0.1
 }
 
+DEVICE_RISK = {'API': 0.7, 'Web Browser': 0.3, 'Mobile App': 0.2, 
+               'POS Terminal': 0.1, 'ATM': 0.4, 'Phone Banking': 0.3}
+
+# Firebase sync helper
+def get_firebase_sync():
+    try:
+        from firebase_client import get_firebase_sync as _get_sync
+        return _get_sync()
+    except Exception:
+        return None
+
 
 def extract_features(transaction):
-    """Extract features from transaction for ML prediction"""
+    """Extract features from transaction for ML prediction - optimized"""
     amount = float(transaction.get('amount', 0))
     hour = int(transaction.get('hour_of_day', 12))
     day = int(transaction.get('day_of_week', 0))
     is_international = 1 if transaction.get('is_international', False) else 0
     
-    category = transaction.get('merchant_category', 'Other')
-    category_risk = CATEGORY_RISK.get(category, 0.3)
+    category_risk = CATEGORY_RISK.get(transaction.get('merchant_category', 'Other'), 0.3)
+    location_risk = LOCATION_RISK.get(transaction.get('location', 'Unknown'), 0.5)
     
-    location = transaction.get('location', 'Unknown')
-    location_risk = LOCATION_RISK.get(location, 0.5)
-    
-    # Time risk (late night = higher risk)
-    time_risk = 0.1
+    # Time risk
     if hour >= 0 and hour <= 5:
         time_risk = 0.8
     elif hour >= 22:
         time_risk = 0.6
     elif hour >= 6 and hour <= 8:
         time_risk = 0.3
+    else:
+        time_risk = 0.1
     
-    # Amount risk (log-scaled)
     amount_risk = min(1.0, amount / 10000)
+    device_risk = DEVICE_RISK.get(transaction.get('device', 'Unknown'), 0.5)
     
-    # Device risk
-    device = transaction.get('device', 'Unknown')
-    device_risk = {'API': 0.7, 'Web Browser': 0.3, 'Mobile App': 0.2, 
-                   'POS Terminal': 0.1, 'ATM': 0.4, 'Phone Banking': 0.3}.get(device, 0.5)
-    
-    features = [
-        amount,
-        hour,
-        day,
-        is_international,
-        category_risk,
-        location_risk,
-        time_risk,
-        amount_risk,
-        device_risk,
-        amount * time_risk,  # interaction feature
-        amount * location_risk,  # interaction feature
-    ]
-    
-    return np.array(features).reshape(1, -1)
+    return np.array([
+        amount, hour, day, is_international, category_risk,
+        location_risk, time_risk, amount_risk, device_risk,
+        amount * time_risk, amount * location_risk,
+    ]).reshape(1, -1)
 
 
 def compute_fraud_score(transaction):
-    """Compute fraud probability using multiple signals"""
+    """Compute fraud probability - optimized for speed"""
     features = extract_features(transaction)
     scores = []
     
@@ -117,15 +112,12 @@ def compute_fraud_score(transaction):
         
         if isolation_forest is not None:
             iso_score = isolation_forest.decision_function(scaled_features)[0]
-            # Convert isolation forest score to probability (negative = anomaly)
-            iso_prob = max(0, min(1, 0.5 - iso_score))
-            scores.append(iso_prob)
+            scores.append(max(0, min(1, 0.5 - iso_score)))
         
         if logistic_model is not None:
-            log_prob = logistic_model.predict_proba(scaled_features)[0][1]
-            scores.append(log_prob)
+            scores.append(float(logistic_model.predict_proba(scaled_features)[0][1]))
     
-    # Rule-based score as fallback/supplement
+    # Rule-based score
     amount = float(transaction.get('amount', 0))
     hour = int(transaction.get('hour_of_day', 12))
     category = transaction.get('merchant_category', 'Other')
@@ -133,33 +125,18 @@ def compute_fraud_score(transaction):
     is_international = transaction.get('is_international', False)
     
     rule_score = 0.0
+    if amount > 5000: rule_score += 0.3
+    elif amount > 2000: rule_score += 0.15
+    elif amount > 1000: rule_score += 0.08
     
-    # Amount rules
-    if amount > 5000:
-        rule_score += 0.3
-    elif amount > 2000:
-        rule_score += 0.15
-    elif amount > 1000:
-        rule_score += 0.08
+    if hour >= 0 and hour <= 4: rule_score += 0.25
+    elif hour >= 22 or hour <= 5: rule_score += 0.15
     
-    # Time rules
-    if hour >= 0 and hour <= 4:
-        rule_score += 0.25
-    elif hour >= 22 or hour <= 5:
-        rule_score += 0.15
-    
-    # Category rules  
     rule_score += CATEGORY_RISK.get(category, 0.2) * 0.3
-    
-    # Location rules
     rule_score += LOCATION_RISK.get(location, 0.3) * 0.25
+    if is_international: rule_score += 0.1
     
-    # International
-    if is_international:
-        rule_score += 0.1
-    
-    rule_score = min(1.0, rule_score)
-    scores.append(rule_score)
+    scores.append(min(1.0, rule_score))
     
     # Weighted average
     if len(scores) == 3:
@@ -173,34 +150,31 @@ def compute_fraud_score(transaction):
 
 
 def get_risk_level(score):
-    if score >= 0.8:
-        return 'critical'
-    elif score >= 0.6:
-        return 'high'
-    elif score >= 0.35:
-        return 'medium'
-    else:
-        return 'low'
+    if score >= 0.8: return 'critical'
+    elif score >= 0.6: return 'high'
+    elif score >= 0.35: return 'medium'
+    else: return 'low'
 
 
 @predictions_bp.route('/analyze', methods=['POST'])
 @jwt_required()
 def analyze_transaction():
-    """Analyze a single transaction for fraud"""
+    """Analyze a single transaction for fraud - with Firebase persistence"""
     try:
         data = request.get_json()
         
         fraud_score = compute_fraud_score(data)
         risk_level = get_risk_level(fraud_score)
         
-        # Build analysis breakdown
-        features = extract_features(data)
+        amount = data.get('amount', 0)
+        hour = data.get('hour_of_day', 12)
+        
         analysis = {
             'fraud_score': fraud_score,
             'risk_level': risk_level,
             'factors': {
-                'amount_risk': 'High' if data.get('amount', 0) > 2000 else 'Medium' if data.get('amount', 0) > 500 else 'Low',
-                'time_risk': 'High' if data.get('hour_of_day', 12) in range(0, 6) else 'Medium' if data.get('hour_of_day', 12) >= 22 else 'Low',
+                'amount_risk': 'High' if amount > 2000 else 'Medium' if amount > 500 else 'Low',
+                'time_risk': 'High' if hour in range(0, 6) else 'Medium' if hour >= 22 else 'Low',
                 'location_risk': 'High' if LOCATION_RISK.get(data.get('location', ''), 0.5) > 0.5 else 'Medium' if LOCATION_RISK.get(data.get('location', ''), 0.3) > 0.2 else 'Low',
                 'category_risk': 'High' if CATEGORY_RISK.get(data.get('merchant_category', ''), 0.3) > 0.5 else 'Medium' if CATEGORY_RISK.get(data.get('merchant_category', ''), 0.3) > 0.2 else 'Low',
                 'international_risk': 'High' if data.get('is_international', False) else 'Low'
@@ -209,6 +183,22 @@ def analyze_transaction():
             'model_used': 'ensemble' if isolation_forest and logistic_model else 'rule_based',
             'timestamp': datetime.utcnow().isoformat()
         }
+        
+        # Save analysis to Firebase
+        sync = get_firebase_sync()
+        if sync:
+            try:
+                analysis_record = {
+                    'id': str(uuid.uuid4()),
+                    'type': 'single_analysis',
+                    'input_data': data,
+                    'result': analysis,
+                    'user_id': get_jwt_identity(),
+                    'created_at': datetime.utcnow().isoformat()
+                }
+                sync.sync_transaction(analysis_record)
+            except Exception:
+                pass  # Non-blocking
         
         return jsonify(analysis), 200
         
@@ -219,20 +209,19 @@ def analyze_transaction():
 @predictions_bp.route('/batch', methods=['POST'])
 @jwt_required()
 def batch_analyze():
-    """Analyze all pending transactions"""
+    """Analyze all pending transactions - optimized batch processing"""
     try:
-        # Get pending transactions
         pending = db.collection('transactions').where('risk_level', '==', 'pending').get()
         
         results = []
         alerts_created = 0
+        sync = get_firebase_sync()
         
         for doc in pending:
             tx_data = doc.to_dict()
             fraud_score = compute_fraud_score(tx_data)
             risk_level = get_risk_level(fraud_score)
             
-            # Update transaction
             update_data = {
                 'fraud_score': fraud_score,
                 'risk_level': risk_level,
@@ -243,10 +232,19 @@ def batch_analyze():
             
             db.collection('transactions').document(tx_data['id']).update(update_data)
             
+            # Sync transaction to Firebase
+            if sync:
+                try:
+                    tx_copy = dict(tx_data)
+                    tx_copy.update(update_data)
+                    sync.sync_transaction(tx_copy)
+                except Exception:
+                    pass
+            
             # Create alert for high-risk
             if risk_level in ['high', 'critical']:
                 alert_id = str(uuid.uuid4())
-                db.collection('alerts').document(alert_id).set({
+                alert = {
                     'id': alert_id,
                     'transaction_id': tx_data['id'],
                     'type': 'ai_detection',
@@ -255,7 +253,16 @@ def batch_analyze():
                     'fraud_score': fraud_score,
                     'created_at': datetime.utcnow().isoformat(),
                     'is_read': False
-                })
+                }
+                db.collection('alerts').document(alert_id).set(alert)
+                
+                # Sync alert to Firebase
+                if sync:
+                    try:
+                        sync.sync_alert(alert)
+                    except Exception:
+                        pass
+                
                 alerts_created += 1
             
             tx_data.update(update_data)
@@ -274,7 +281,7 @@ def batch_analyze():
 @predictions_bp.route('/upload-csv', methods=['POST'])
 @jwt_required()
 def upload_csv():
-    """Upload CSV file with transaction data for analysis"""
+    """Upload CSV file with transaction data for analysis - with Firebase persistence"""
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No file uploaded'}), 400
@@ -287,6 +294,7 @@ def upload_csv():
             return jsonify({'error': 'Only CSV files are supported'}), 400
         
         user_id = get_jwt_identity()
+        sync = get_firebase_sync()
         
         # Read CSV
         stream = io.StringIO(file.stream.read().decode('UTF-8'))
@@ -297,7 +305,6 @@ def upload_csv():
         alerts_created = 0
         errors = []
         
-        # Map common CSV column names to our expected fields
         COLUMN_MAPPINGS = {
             'amount': ['amount', 'transaction_amount', 'amt', 'value', 'total', 'price'],
             'merchant_category': ['merchant_category', 'category', 'merchant_type', 'type', 'merchant_cat', 'mcc'],
@@ -312,13 +319,10 @@ def upload_csv():
         }
         
         def find_column(row, field_name):
-            """Find the matching column in CSV data"""
             possible_names = COLUMN_MAPPINGS.get(field_name, [field_name])
             for name in possible_names:
-                # Try exact match first
                 if name in row:
                     return row[name]
-                # Try case-insensitive match
                 for key in row.keys():
                     if key.lower().strip() == name.lower():
                         return row[key]
@@ -327,11 +331,10 @@ def upload_csv():
         row_count = 0
         for row in reader:
             row_count += 1
-            if row_count > 500:  # Limit to 500 rows
+            if row_count > 500:
                 break
             
             try:
-                # Extract data using flexible column mapping
                 amount_str = find_column(row, 'amount')
                 if amount_str is None:
                     errors.append(f"Row {row_count}: Missing amount field")
@@ -340,10 +343,9 @@ def upload_csv():
                 try:
                     amount = float(str(amount_str).replace(',', '').replace('$', '').strip())
                 except (ValueError, TypeError):
-                    errors.append(f"Row {row_count}: Invalid amount value '{amount_str}'")
+                    errors.append(f"Row {row_count}: Invalid amount '{amount_str}'")
                     continue
                 
-                # Get optional fields with defaults
                 merchant_category = find_column(row, 'merchant_category') or 'Other'
                 location = find_column(row, 'location') or 'Unknown Location'
                 device = find_column(row, 'device') or 'Web Browser'
@@ -361,17 +363,12 @@ def upload_csv():
                     day = datetime.utcnow().weekday()
                 
                 intl_str = find_column(row, 'is_international')
-                is_international = False
-                if intl_str:
-                    is_international = str(intl_str).lower() in ['true', '1', 'yes', 'y']
+                is_international = str(intl_str).lower() in ['true', '1', 'yes', 'y'] if intl_str else False
                 
                 merchant = find_column(row, 'merchant') or f"CSV_Import_{row_count}"
                 card_type = find_column(row, 'card_type') or 'Visa'
-                
-                # Check if CSV has a ground-truth fraud label
                 fraud_label = find_column(row, 'is_fraud')
                 
-                # Create transaction
                 transaction_id = str(uuid.uuid4())
                 transaction = {
                     'id': transaction_id,
@@ -396,18 +393,16 @@ def upload_csv():
                     'original_filename': file.filename
                 }
                 
-                # If CSV had ground truth, store it
                 if fraud_label is not None:
                     try:
                         transaction['ground_truth_fraud'] = str(fraud_label).lower() in ['true', '1', 'yes', 'y']
                     except:
                         pass
                 
-                # Save to DB
                 db.collection('transactions').document(transaction_id).set(transaction)
                 transactions_created.append(transaction)
                 
-                # Run AI analysis immediately
+                # Run AI analysis
                 fraud_score = compute_fraud_score(transaction)
                 risk_level = get_risk_level(fraud_score)
                 
@@ -423,10 +418,17 @@ def upload_csv():
                 transaction.update(update_data)
                 transactions_analyzed.append(transaction)
                 
+                # Sync to Firebase
+                if sync:
+                    try:
+                        sync.sync_transaction(transaction)
+                    except Exception:
+                        pass
+                
                 # Create alert for high-risk
                 if risk_level in ['high', 'critical']:
                     alert_id = str(uuid.uuid4())
-                    db.collection('alerts').document(alert_id).set({
+                    alert = {
                         'id': alert_id,
                         'transaction_id': transaction_id,
                         'type': 'csv_upload_detection',
@@ -435,13 +437,19 @@ def upload_csv():
                         'fraud_score': fraud_score,
                         'created_at': datetime.utcnow().isoformat(),
                         'is_read': False
-                    })
+                    }
+                    db.collection('alerts').document(alert_id).set(alert)
+                    if sync:
+                        try:
+                            sync.sync_alert(alert)
+                        except Exception:
+                            pass
                     alerts_created += 1
                     
             except Exception as row_error:
                 errors.append(f"Row {row_count}: {str(row_error)}")
         
-        # Compute summary stats
+        # Summary stats
         risk_summary = {'low': 0, 'medium': 0, 'high': 0, 'critical': 0}
         total_amount = 0
         total_fraud_amount = 0
@@ -463,8 +471,8 @@ def upload_csv():
             'total_amount': round(total_amount, 2),
             'total_fraud_amount': round(total_fraud_amount, 2),
             'fraud_rate': round((risk_summary.get('high', 0) + risk_summary.get('critical', 0)) / max(1, len(transactions_analyzed)) * 100, 2),
-            'errors': errors[:10],  # Only return first 10 errors
-            'sample_results': transactions_analyzed[:5]  # Return first 5 as sample
+            'errors': errors[:10],
+            'sample_results': transactions_analyzed[:5]
         }), 200
         
     except Exception as e:

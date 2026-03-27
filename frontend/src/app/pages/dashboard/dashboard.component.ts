@@ -17,79 +17,63 @@ import Chart from 'chart.js/auto';
         </div>
         <div class="header-actions">
           <button class="btn btn-secondary" (click)="refreshData()">
-            <span class="material-icons-outlined">refresh</span>
+            <span class="material-icons-outlined" [class.spin]="loading">refresh</span>
             Refresh
           </button>
-          <button class="btn btn-primary" (click)="simulateAndAnalyze()">
+          <button class="btn btn-primary" (click)="simulateAndAnalyze()" [disabled]="loading">
             <span class="material-icons-outlined">play_arrow</span>
             Simulate + Analyze
           </button>
         </div>
       </div>
 
-      <!-- Loading -->
+      <!-- Loading Skeleton -->
       <div class="loading-state" *ngIf="loading">
-        <div class="spinner"></div>
-        <p>Loading dashboard data...</p>
+        <div class="skeleton-grid">
+          <div class="skeleton-card" *ngFor="let i of [1,2,3,4]">
+            <div class="skeleton" style="width: 48px; height: 48px; border-radius: 8px;"></div>
+            <div class="skeleton" style="width: 80px; height: 32px; margin-top: 16px;"></div>
+            <div class="skeleton" style="width: 120px; height: 14px; margin-top: 8px;"></div>
+          </div>
+        </div>
       </div>
 
-      <div *ngIf="!loading">
-        <!-- Stat Cards -->
+      <div *ngIf="!loading" class="dashboard-content">
+        <!-- Stat Cards with animation -->
         <div class="grid-4 mb-32">
-          <div class="stat-card animate-in">
-            <div class="stat-icon" style="background: rgba(99, 102, 241, 0.15); color: var(--accent-primary-light)">
-              <span class="material-icons-outlined">receipt_long</span>
+          <div class="stat-card animate-in" *ngFor="let stat of statCards; let i = index"
+               [style.animationDelay.ms]="i * 100">
+            <div class="stat-icon" [style.background]="stat.iconBg">
+              <span class="material-icons-outlined" [style.color]="stat.iconColor">{{ stat.icon }}</span>
             </div>
-            <div class="stat-value">{{ overview?.total_transactions || 0 }}</div>
-            <div class="stat-label">Total Transactions</div>
-            <div class="stat-glow purple"></div>
-          </div>
-          
-          <div class="stat-card animate-in">
-            <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171">
-              <span class="material-icons-outlined">gpp_bad</span>
+            <div class="stat-value" [style.color]="stat.valueColor || 'var(--text-primary)'">
+              {{ stat.prefix }}{{ stat.value }}{{ stat.suffix }}
             </div>
-            <div class="stat-value text-danger">{{ overview?.fraud_count || 0 }}</div>
-            <div class="stat-label">Fraudulent Detected</div>
-            <div class="stat-change negative" *ngIf="overview?.fraud_rate">
-              <span class="material-icons-outlined">trending_up</span>
-              {{ overview?.fraud_rate }}% Fraud Rate
+            <div class="stat-label">{{ stat.label }}</div>
+            <div class="stat-change" [ngClass]="stat.changeType" *ngIf="stat.changeText">
+              <span class="material-icons-outlined">{{ stat.changeIcon }}</span>
+              {{ stat.changeText }}
             </div>
-            <div class="stat-glow red"></div>
-          </div>
-          
-          <div class="stat-card animate-in">
-            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399">
-              <span class="material-icons-outlined">verified</span>
-            </div>
-            <div class="stat-value text-success">{{ overview?.legit_count || 0 }}</div>
-            <div class="stat-label">Legitimate</div>
-            <div class="stat-glow green"></div>
-          </div>
-          
-          <div class="stat-card animate-in">
-            <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24">
-              <span class="material-icons-outlined">attach_money</span>
-            </div>
-            <div class="stat-value">\${{ formatAmount(overview?.blocked_amount || 0) }}</div>
-            <div class="stat-label">Blocked Amount</div>
-            <div class="stat-glow yellow"></div>
+            <div class="stat-glow" [style.background]="stat.glowColor"></div>
+            <div class="stat-bar" [style.width.%]="stat.barPercent || 0" [style.background]="stat.barColor"></div>
           </div>
         </div>
 
         <!-- Charts Row -->
         <div class="grid-2 mb-32">
-          <div class="card animate-in">
+          <div class="card animate-in" style="animation-delay: 300ms">
             <div class="card-header">
               <h3>Fraud vs Legitimate Distribution</h3>
-              <span class="badge badge-low">Live</span>
+              <span class="badge badge-low">
+                <span class="live-dot-sm"></span> Live
+              </span>
             </div>
             <div class="chart-container">
               <canvas #fraudPieChart></canvas>
             </div>
           </div>
           
-          <div class="card animate-in">
+          <div class="card animate-in" style="animation-delay: 400ms">
             <div class="card-header">
               <h3>Risk Level Distribution</h3>
             </div>
@@ -100,12 +84,12 @@ import Chart from 'chart.js/auto';
         </div>
 
         <!-- Hourly Activity Chart -->
-        <div class="card mb-32 animate-in">
+        <div class="card mb-32 animate-in" style="animation-delay: 500ms">
           <div class="card-header">
             <h3>24-Hour Transaction Activity</h3>
             <div class="chart-legend">
-              <span class="legend-item"><span class="dot green"></span> Legitimate</span>
-              <span class="legend-item"><span class="dot red"></span> Fraudulent</span>
+              <span class="legend-item"><span class="legend-dot green"></span> Legitimate</span>
+              <span class="legend-item"><span class="legend-dot red"></span> Fraudulent</span>
             </div>
           </div>
           <div class="chart-container wide">
@@ -113,9 +97,9 @@ import Chart from 'chart.js/auto';
           </div>
         </div>
 
-        <!-- Bottom Section: Category & Recent Flagged-->
+        <!-- Bottom Section -->
         <div class="grid-2">
-          <div class="card animate-in">
+          <div class="card animate-in" style="animation-delay: 600ms">
             <div class="card-header">
               <h3>Fraud by Category</h3>
             </div>
@@ -124,13 +108,14 @@ import Chart from 'chart.js/auto';
             </div>
           </div>
 
-          <div class="card animate-in">
+          <div class="card animate-in" style="animation-delay: 700ms">
             <div class="card-header">
               <h3>Recent Flagged Transactions</h3>
               <a routerLink="/alerts" class="see-all">View All →</a>
             </div>
             <div class="flagged-list">
-              <div class="flagged-item" *ngFor="let tx of recentFlagged?.slice(0, 8)">
+              <div class="flagged-item" *ngFor="let tx of recentFlagged?.slice(0, 8); let i = index"
+                   [style.animationDelay.ms]="700 + i * 50">
                 <div class="flagged-info">
                   <div class="flagged-id mono">{{ tx.id?.slice(0, 8) }}...</div>
                   <div class="flagged-meta">
@@ -162,6 +147,7 @@ import Chart from 'chart.js/auto';
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 32px;
+      animation: fadeInUp 0.5s ease both;
     }
     
     .header-actions {
@@ -174,26 +160,41 @@ import Chart from 'chart.js/auto';
     .text-danger { color: #f87171 !important; }
     .text-success { color: #34d399 !important; }
     
+    .spin { animation: rotate 1s linear infinite; }
+    
+    /* Stat cards enhanced */
     .stat-card {
       position: relative;
       overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-glow);
+      border-color: var(--border-hover);
     }
     
     .stat-glow {
       position: absolute;
-      width: 120px;
-      height: 120px;
+      width: 140px;
+      height: 140px;
       border-radius: 50%;
-      filter: blur(60px);
-      opacity: 0.06;
-      top: -20px;
-      right: -20px;
+      filter: blur(70px);
+      opacity: 0.07;
+      top: -30px;
+      right: -30px;
+      transition: opacity 0.4s;
     }
+    .stat-card:hover .stat-glow { opacity: 0.12; }
     
-    .stat-glow.purple { background: var(--accent-primary); }
-    .stat-glow.red { background: #ef4444; }
-    .stat-glow.green { background: #10b981; }
-    .stat-glow.yellow { background: #f59e0b; }
+    .stat-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      border-radius: 0 3px 0 0;
+      transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
     
     .card-header {
       display: flex;
@@ -203,8 +204,18 @@ import Chart from 'chart.js/auto';
     }
     
     .card-header h3 {
+      font-family: var(--font-display);
       font-size: 16px;
       font-weight: 600;
+    }
+    
+    .live-dot-sm {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      display: inline-block;
+      animation: glow 2s infinite;
     }
     
     .chart-container {
@@ -233,14 +244,14 @@ import Chart from 'chart.js/auto';
       color: var(--text-secondary);
     }
     
-    .dot {
+    .legend-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
     }
     
-    .dot.green { background: #10b981; }
-    .dot.red { background: #ef4444; }
+    .legend-dot.green { background: #10b981; }
+    .legend-dot.red { background: #ef4444; }
     
     .see-all {
       font-size: 13px;
@@ -258,7 +269,10 @@ import Chart from 'chart.js/auto';
       align-items: center;
       padding: 12px 0;
       border-bottom: 1px solid rgba(99, 102, 241, 0.06);
+      animation: fadeInUp 0.4s ease both;
+      transition: background 0.2s;
     }
+    .flagged-item:hover { background: rgba(99, 102, 241, 0.03); }
     
     .flagged-item:last-child { border-bottom: none; }
     
@@ -280,26 +294,40 @@ import Chart from 'chart.js/auto';
     }
     
     .flagged-amount {
-      font-size: 14px;
+      font-family: var(--font-display);
+      font-size: 15px;
       font-weight: 700;
       margin-bottom: 4px;
     }
     
     .mono { font-family: var(--font-mono); }
     
+    /* Loading skeleton */
+    .skeleton-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    .skeleton-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+    }
+    
     .loading-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 100px 0;
-      gap: 16px;
-      color: var(--text-muted);
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .dashboard-content {
+      animation: fadeIn 0.5s ease;
     }
     
     @media (max-width: 768px) {
       .page-header { flex-direction: column; gap: 16px; }
       .header-actions { width: 100%; }
+      .skeleton-grid { grid-template-columns: repeat(2, 1fr); }
     }
   `]
 })
@@ -316,6 +344,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   categoryFraud: any = {};
   recentFlagged: any[] = [];
   loading = true;
+  statCards: any[] = [];
 
   private charts: Chart[] = [];
 
@@ -337,6 +366,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         this.hourlyLegit = res.hourly_legit;
         this.categoryFraud = res.category_fraud;
         this.recentFlagged = res.recent_flagged;
+        this.buildStatCards();
         this.loading = false;
         
         setTimeout(() => this.initCharts(), 100);
@@ -346,6 +376,45 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         this.loading = false;
       }
     });
+  }
+
+  buildStatCards() {
+    const o = this.overview || {};
+    const total = o.total_transactions || 0;
+    const fraud = o.fraud_count || 0;
+    const legit = o.legit_count || 0;
+    const blocked = o.blocked_amount || 0;
+    const fraudRate = o.fraud_rate || 0;
+
+    this.statCards = [
+      {
+        icon: 'receipt_long', label: 'Total Transactions',
+        value: total.toLocaleString(), prefix: '', suffix: '',
+        iconBg: 'rgba(99, 102, 241, 0.15)', iconColor: 'var(--accent-primary-light)',
+        glowColor: 'var(--accent-primary)', barPercent: 100, barColor: 'var(--accent-primary)'
+      },
+      {
+        icon: 'gpp_bad', label: 'Fraudulent Detected',
+        value: fraud.toLocaleString(), prefix: '', suffix: '',
+        valueColor: '#f87171',
+        iconBg: 'rgba(239, 68, 68, 0.15)', iconColor: '#f87171',
+        glowColor: '#ef4444', changeText: `${fraudRate}% Fraud Rate`, changeType: 'negative', changeIcon: 'trending_up',
+        barPercent: Math.min(100, fraudRate * 5), barColor: '#ef4444'
+      },
+      {
+        icon: 'verified', label: 'Legitimate',
+        value: legit.toLocaleString(), prefix: '', suffix: '',
+        valueColor: '#34d399',
+        iconBg: 'rgba(16, 185, 129, 0.15)', iconColor: '#34d399',
+        glowColor: '#10b981', barPercent: total > 0 ? (legit / total * 100) : 0, barColor: '#10b981'
+      },
+      {
+        icon: 'attach_money', label: 'Blocked Amount',
+        value: this.formatAmount(blocked), prefix: '$', suffix: '',
+        iconBg: 'rgba(245, 158, 11, 0.15)', iconColor: '#fbbf24',
+        glowColor: '#f59e0b', barPercent: Math.min(100, blocked / 1000), barColor: '#f59e0b'
+      }
+    ];
   }
 
   refreshData() {
@@ -400,13 +469,14 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: '65%',
+          cutout: '68%',
           plugins: {
             legend: {
               position: 'bottom',
-              labels: { color: '#94a3b8', padding: 16, usePointStyle: true, pointStyleWidth: 8, font: { size: 12 } }
+              labels: { color: '#94a3b8', padding: 16, usePointStyle: true, pointStyleWidth: 8, font: { size: 12, family: 'Inter' } }
             }
-          }
+          },
+          animation: { animateScale: true, animateRotate: true }
         }
       });
       this.charts.push(ch);
@@ -441,9 +511,10 @@ export class DashboardComponent implements OnInit, AfterViewInit {
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 12 } } },
+            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 12, family: 'Inter' } } },
             y: { grid: { color: 'rgba(99, 102, 241, 0.06)' }, ticks: { color: '#64748b' } }
-          }
+          },
+          animation: { duration: 1200, easing: 'easeOutQuart' }
         }
       });
       this.charts.push(ch);
@@ -485,9 +556,10 @@ export class DashboardComponent implements OnInit, AfterViewInit {
           interaction: { intersect: false, mode: 'index' },
           plugins: { legend: { display: false } },
           scales: {
-            x: { grid: { display: false }, ticks: { color: '#64748b', maxTicksLimit: 12, font: { size: 11 } } },
+            x: { grid: { display: false }, ticks: { color: '#64748b', maxTicksLimit: 12, font: { size: 11, family: 'Inter' } } },
             y: { grid: { color: 'rgba(99, 102, 241, 0.06)' }, ticks: { color: '#64748b' } }
-          }
+          },
+          animation: { duration: 1500, easing: 'easeOutQuart' }
         }
       });
       this.charts.push(ch);
@@ -520,7 +592,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
           scales: {
             x: { grid: { color: 'rgba(99, 102, 241, 0.06)' }, ticks: { color: '#64748b' } },
             y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } }
-          }
+          },
+          animation: { duration: 1200, easing: 'easeOutQuart' }
         }
       });
       this.charts.push(ch);

@@ -2,11 +2,12 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { ChatbotComponent } from '../components/chatbot/chatbot.component';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ChatbotComponent],
   template: `
     <div class="app-layout">
       <!-- Sidebar -->
@@ -102,6 +103,9 @@ import { AuthService } from '../services/auth.service';
           <router-outlet></router-outlet>
         </div>
       </main>
+
+      <!-- AI Chatbot -->
+      <app-chatbot></app-chatbot>
     </div>
   `,
   styles: [`
@@ -170,8 +174,9 @@ import { AuthService } from '../services/auth.service';
     }
     
     .logo-text h1 {
+      font-family: var(--font-display);
       font-size: 18px;
-      font-weight: 800;
+      font-weight: 700;
       line-height: 1;
     }
     
@@ -307,7 +312,7 @@ import { AuthService } from '../services/auth.service';
       justify-content: space-between;
       padding: 0 32px;
       border-bottom: 1px solid var(--border-color);
-      background: rgba(10, 14, 26, 0.8);
+      background: rgba(6, 10, 20, 0.8);
       backdrop-filter: blur(20px);
       position: sticky;
       top: 0;
