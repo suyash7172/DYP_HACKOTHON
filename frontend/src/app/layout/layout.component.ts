@@ -9,10 +9,21 @@ import { ChatbotComponent } from '../components/chatbot/chatbot.component';
   standalone: true,
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ChatbotComponent],
   template: `
-    <div class="app-layout">
+    <div class="app-layout" [class.mobile-open]="mobileOpen">
+      <!-- Sidebar overlay for mobile -->
+      <div class="sidebar-overlay" (click)="mobileOpen = false"></div>
+      
       <!-- Sidebar -->
-      <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+      <aside class="sidebar" [class.collapsed]="sidebarCollapsed" [class.mobile-show]="mobileOpen">
         <div class="sidebar-header">
+          <div class="header-left">
+            <button class="btn btn-icon toggle-btn mobile-menu-btn" (click)="mobileOpen = !mobileOpen">
+              <span class="material-icons-outlined">menu</span>
+            </button>
+            <button class="btn btn-icon toggle-btn desktop-toggle" (click)="sidebarCollapsed = !sidebarCollapsed">
+              <span class="material-icons-outlined">{{ sidebarCollapsed ? 'menu_open' : 'menu' }}</span>
+            </button>
+          </div>
           <div class="logo" *ngIf="!sidebarCollapsed">
             <div class="logo-icon">
               <span class="material-icons-outlined">shield</span>
@@ -368,17 +379,60 @@ import { ChatbotComponent } from '../components/chatbot/chatbot.component';
       overflow-y: auto;
     }
     
+    .mobile-menu-btn { display: none; }
+    .sidebar-overlay { display: none; }
+    
+    @media (max-width: 1024px) {
+      .content-area { padding: 20px; }
+      .top-header { padding: 0 20px; }
+    }
+    
     @media (max-width: 768px) {
-      .sidebar { transform: translateX(-100%); }
-      .sidebar:not(.collapsed) { transform: translateX(0); }
+      .mobile-menu-btn { display: flex; }
+      .desktop-toggle { display: none; }
+      
+      .sidebar { 
+        position: fixed; 
+        z-index: 1000;
+        transform: translateX(-100%); 
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 280px !important;
+      }
+      
+      .sidebar.mobile-show { transform: translateX(0); }
       .main-content { margin-left: 0 !important; }
+      
+      .sidebar-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+      
+      .app-layout.mobile-open .sidebar-overlay {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .logo-mini { display: none; }
+      .logo-text h1 { font-size: 16px; }
     }
   `]
 })
 export class LayoutComponent {
   sidebarCollapsed = false;
+  mobileOpen = false;
 
-  constructor(public authService: AuthService, private router: Router) {}
+  constructor(public authService: AuthService, private router: Router) {
+    this.router.events.subscribe(() => {
+      this.mobileOpen = false;
+    });
+  }
 
   get isAdmin(): boolean {
     return this.authService.isAdmin;

@@ -1,0 +1,16 @@
+Amount,Category,Location,Device,Hour,Day,International,Merchant
+8450.00,Crypto Exchange,Unknown Location,API,3,5,Yes,Global_Crypto_X
+45.20,Grocery,New York, US,Mobile App,14,5,No,Starbucks_NYC
+1200.00,Gambling,Moscow, Russia,Web Browser,23,5,Yes,HighRoller_Casino
+15.50,Gas Station,London, UK,POS Terminal,14,5,No,Shell_Gas
+3200.00,Wire Transfer,Lagos, Nigeria,API,1,5,Yes,Wealth_Transfer_LLC
+89.99,Online Shopping,Seattle, US,Web Browser,10,5,No,Amazon_Prime
+540.00,Electronics,Tokyo, Japan,POS Terminal,16,5,Yes,Apple_Store
+12500.00,Luxury Goods,Unknown Location,API,4,5,Yes,Unknown_Entity
+12.00,Travel,New York, US,Mobile App,7,5,No,MTA_Subway
+210.50,Grocery,Los Angeles, US,POS Terminal,18,5,No,Whole_Foods
+5000.00,Wire Transfer,Hong Kong,Web Browser,2,5,Yes,Global_Bank_Transfer
+25.00,Restaurant,Paris, France,Mobile App,12,6,No,Le_Petit_Cafe
+150.00,Entertainment,London, UK,Web Browser,20,5,No,Netflix_Inc
+450.00,Electronics,Berlin, Germany,POS Terminal,15,5,No,Saturn_DE
+6000.00,Gambling,Singapore,API,0,4,Yes,Marina_Sands_Online

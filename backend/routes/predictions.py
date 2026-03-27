@@ -13,6 +13,7 @@ import joblib
 import uuid
 import csv
 import io
+import threading
 from datetime import datetime
 from config import Config
 
@@ -166,9 +167,23 @@ def analyze_transaction():
         fraud_score = compute_fraud_score(data)
         risk_level = get_risk_level(fraud_score)
         
-        amount = data.get('amount', 0)
-        hour = data.get('hour_of_day', 12)
-        
+        # Async background sync to Firebase
+        def background_sync(tx_data, analysis_result, user_id):
+            sync = get_firebase_sync()
+            if sync:
+                try:
+                    analysis_record = {
+                        'id': str(uuid.uuid4()),
+                        'type': 'single_analysis',
+                        'input_data': tx_data,
+                        'result': analysis_result,
+                        'user_id': user_id,
+                        'created_at': datetime.utcnow().isoformat()
+                    }
+                    sync.sync_transaction(analysis_record)
+                except Exception:
+                    pass
+
         analysis = {
             'fraud_score': fraud_score,
             'risk_level': risk_level,
@@ -184,21 +199,8 @@ def analyze_transaction():
             'timestamp': datetime.utcnow().isoformat()
         }
         
-        # Save analysis to Firebase
-        sync = get_firebase_sync()
-        if sync:
-            try:
-                analysis_record = {
-                    'id': str(uuid.uuid4()),
-                    'type': 'single_analysis',
-                    'input_data': data,
-                    'result': analysis,
-                    'user_id': get_jwt_identity(),
-                    'created_at': datetime.utcnow().isoformat()
-                }
-                sync.sync_transaction(analysis_record)
-            except Exception:
-                pass  # Non-blocking
+        # Start background sync thread and return response immediately
+        threading.Thread(target=background_sync, args=(data, analysis, get_jwt_identity())).start()
         
         return jsonify(analysis), 200
         
