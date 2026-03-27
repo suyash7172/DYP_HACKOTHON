@@ -48,7 +48,7 @@ Solidity (Smart Contracts)
 Ethers.js / Web3.js
 ⚙️ Setup Instructions
 1️⃣ Clone the Repository
-git clone https://github.com/your-username/securepay-ai.git
+git clone https://github.com/suyash7172/DYP_HACKOTHON.git
 cd securepay-ai
 2️⃣ Backend Setup (Flask)
 cd backend
@@ -88,9 +88,6 @@ Real-time fraud detection
 Risk-based alerts
 Blockchain-secured transaction logs
 Interactive analytics dashboard
-
-If you want, I can also make this more attractive (with badges, screenshots, GitHub styling) or create a 1-page PPT from this 
-
 
 
 • Setup Instructions
