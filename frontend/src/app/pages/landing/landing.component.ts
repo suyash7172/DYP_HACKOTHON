@@ -231,12 +231,12 @@ import { RouterLink } from '@angular/router';
     .gradient-orb {
       position: absolute;
       border-radius: 50%;
-      filter: blur(120px);
-      opacity: 0.12;
+      opacity: 0.2;
+      will-change: transform;
     }
-    .orb-1 { width: 700px; height: 700px; background: #6366f1; top: -200px; right: -150px; animation: float 25s ease-in-out infinite; }
-    .orb-2 { width: 500px; height: 500px; background: #a855f7; bottom: 10%; left: -150px; animation: float 30s ease-in-out infinite reverse; }
-    .orb-3 { width: 400px; height: 400px; background: #06b6d4; top: 40%; left: 40%; animation: float 20s ease-in-out infinite; }
+    .orb-1 { width: 700px; height: 700px; background: radial-gradient(circle, #6366f1 0%, transparent 70%); top: -200px; right: -150px; animation: float 25s ease-in-out infinite; }
+    .orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, #a855f7 0%, transparent 70%); bottom: 10%; left: -150px; animation: float 30s ease-in-out infinite reverse; }
+    .orb-3 { width: 400px; height: 400px; background: radial-gradient(circle, #06b6d4 0%, transparent 70%); top: 40%; left: 40%; animation: float 20s ease-in-out infinite; }
 
     .grid-overlay {
       position: absolute;
@@ -757,12 +757,12 @@ import { RouterLink } from '@angular/router';
       width: 400px;
       height: 400px;
       border-radius: 50%;
-      background: var(--accent-primary);
-      filter: blur(200px);
-      opacity: 0.08;
+      background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
+      opacity: 0.15;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
+      pointer-events: none;
     }
     .cta-card h2 {
       font-family: var(--font-display);
