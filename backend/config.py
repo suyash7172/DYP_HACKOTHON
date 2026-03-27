@@ -28,4 +28,4 @@ class Config:
     FRAUD_THRESHOLD = 0.7
     
     # CORS
-    CORS_ORIGINS = ['http://localhost:4200', 'http://localhost:5000']
+    CORS_ORIGINS = ['http://localhost:4200', 'http://localhost:5001']

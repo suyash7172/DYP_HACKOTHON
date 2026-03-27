@@ -4,11 +4,13 @@ Dashboard Routes - Analytics and insights
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
-from firebase_admin import firestore
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from mock_firestore import get_db
 from datetime import datetime, timedelta
 
 dashboard_bp = Blueprint('dashboard', __name__)
-db = firestore.client()
+db = get_db()
 
 
 @dashboard_bp.route('/overview', methods=['GET'])
@@ -129,7 +131,7 @@ def get_overview():
 def get_alerts():
     try:
         limit = request.args.get('limit', 50, type=int)
-        docs = db.collection('alerts').order_by('created_at', direction=firestore.Query.DESCENDING).limit(limit).get()
+        docs = db.collection('alerts').order_by('created_at', direction='DESCENDING').limit(limit).get()
         alerts_list = [doc.to_dict() for doc in docs]
         return jsonify({'alerts': alerts_list, 'count': len(alerts_list)}), 200
     except Exception as e:

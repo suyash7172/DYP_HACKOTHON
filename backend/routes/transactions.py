@@ -4,13 +4,15 @@ Transaction Routes - CRUD operations and simulation
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from firebase_admin import firestore
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from mock_firestore import get_db
 import uuid
 import random
 from datetime import datetime, timedelta
 
 transactions_bp = Blueprint('transactions', __name__)
-db = firestore.client()
+db = get_db()
 
 MERCHANT_CATEGORIES = [
     'Electronics', 'Grocery', 'Restaurant', 'Gas Station', 'Online Shopping',
@@ -35,7 +37,7 @@ def get_transactions():
         limit = request.args.get('limit', 50, type=int)
         status_filter = request.args.get('status', None)
         
-        query = db.collection('transactions').order_by('timestamp', direction=firestore.Query.DESCENDING)
+        query = db.collection('transactions').order_by('timestamp', direction='DESCENDING')
         
         if status_filter:
             query = query.where('risk_level', '==', status_filter)

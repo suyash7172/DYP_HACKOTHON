@@ -7,7 +7,7 @@ import { ApiService } from '../../services/api.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './alerts.component.html',
-  styleUrl: './alerts.component.css'
+  styleUrls: ['./alerts.component.css']
 })
 export class AlertsComponent implements OnInit {
   alerts: any[] = [];

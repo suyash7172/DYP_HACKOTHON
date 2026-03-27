@@ -1,5 +1,6 @@
 """
 Authentication Routes - Signup/Login with JWT, Role-based access
+Now syncs user data to real Firebase Firestore
 """
 
 from flask import Blueprint, request, jsonify
@@ -7,13 +8,16 @@ from flask_jwt_extended import (
     create_access_token, create_refresh_token, 
     jwt_required, get_jwt_identity, get_jwt
 )
-from firebase_admin import firestore
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from mock_firestore import get_db
+from firebase_client import get_firebase_sync, is_firebase_available
 import bcrypt
 import uuid
 from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
-db = firestore.client()
+db = get_db()
 
 @auth_bp.route('/signup', methods=['POST'])
 def signup():
@@ -50,10 +54,15 @@ def signup():
             'role': role if role in ['admin', 'analyst'] else 'analyst',
             'created_at': datetime.utcnow().isoformat(),
             'is_active': True,
-            'last_login': None
+            'last_login': datetime.utcnow().isoformat()
         }
         
+        # Save to local mock DB
         users_ref.document(user_id).set(user_data)
+        
+        # Sync to real Firebase Firestore
+        firebase_sync = get_firebase_sync()
+        firebase_synced = firebase_sync.sync_user(user_data)
         
         # Generate tokens
         additional_claims = {'role': user_data['role'], 'name': name}
@@ -69,7 +78,8 @@ def signup():
                 'role': user_data['role']
             },
             'access_token': access_token,
-            'refresh_token': refresh_token
+            'refresh_token': refresh_token,
+            'firebase_synced': firebase_synced
         }), 201
         
     except Exception as e:
@@ -104,9 +114,12 @@ def login():
             return jsonify({'error': 'Account is deactivated'}), 403
         
         # Update last login
-        users_ref.document(user_data['id']).update({
-            'last_login': datetime.utcnow().isoformat()
-        })
+        login_update = {'last_login': datetime.utcnow().isoformat()}
+        users_ref.document(user_data['id']).update(login_update)
+        
+        # Sync login event to Firebase
+        firebase_sync = get_firebase_sync()
+        firebase_sync.update_user(user_data['id'], login_update)
         
         # Generate tokens
         additional_claims = {'role': user_data['role'], 'name': user_data['name']}
@@ -175,3 +188,12 @@ def get_all_users():
         return jsonify({'users': users_list}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@auth_bp.route('/firebase-status', methods=['GET'])
+def firebase_status():
+    """Check Firebase connection status"""
+    return jsonify({
+        'firebase_available': is_firebase_available(),
+        'message': 'Firebase Firestore is connected' if is_firebase_available() else 'Using local storage (Firebase unavailable)'
+    }), 200

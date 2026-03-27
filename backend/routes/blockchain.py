@@ -4,14 +4,16 @@ Blockchain Routes - Smart contract interaction, fraud logging on Ethereum
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt
-from firebase_admin import firestore
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from mock_firestore import get_db
 import hashlib
 import json
 from datetime import datetime
 import uuid
 
 blockchain_bp = Blueprint('blockchain', __name__)
-db = firestore.client()
+db = get_db()
 
 
 def generate_transaction_hash(transaction_data):
@@ -133,7 +135,7 @@ def get_blockchain_records():
     """Get all blockchain records"""
     try:
         limit = request.args.get('limit', 50, type=int)
-        docs = db.collection('blockchain_records').order_by('created_at', direction=firestore.Query.DESCENDING).limit(limit).get()
+        docs = db.collection('blockchain_records').order_by('created_at', direction='DESCENDING').limit(limit).get()
         records = [doc.to_dict() for doc in docs]
         return jsonify({'records': records, 'count': len(records)}), 200
     except Exception as e:

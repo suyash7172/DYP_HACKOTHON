@@ -145,5 +145,10 @@ class MockFirestore:
         self._data[coll][doc_id].update(data)
         self._save()
 
+_singleton_db = None
+
 def get_db():
-    return MockFirestore()
+    global _singleton_db
+    if _singleton_db is None:
+        _singleton_db = MockFirestore()
+    return _singleton_db

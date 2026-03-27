@@ -1,0 +1,31 @@
+# Dependencies
+frontend/node_modules/
+backend/__pycache__/
+backend/routes/__pycache__/
+
+# Angular cache & build
+frontend/.angular/
+frontend/dist/
+
+# Environment / Secrets
+backend/serviceAccountKey.json
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Python
+*.pyc
+__pycache__/
+venv/
+.venv/
+
+# Logs
+*.log
+npm-debug.log*

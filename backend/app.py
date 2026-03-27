@@ -1,19 +1,18 @@
 """
 SecurePay AI - Backend Application
-Flask REST API with JWT Authentication, Firebase Firestore, ML Fraud Detection
+Flask REST API with JWT Authentication, Firebase Sync, ML Fraud Detection
 """
 
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import Config
-import firebase_admin
-from firebase_admin import credentials, firestore
-import os
+from mock_firestore import get_db
 
 # Initialize Flask
 app = Flask(__name__)
 app.config.from_object(Config)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file upload
 
 # CORS
 CORS(app, resources={r"/api/*": {"origins": Config.CORS_ORIGINS}}, supports_credentials=True)
@@ -21,16 +20,12 @@ CORS(app, resources={r"/api/*": {"origins": Config.CORS_ORIGINS}}, supports_cred
 # JWT
 jwt = JWTManager(app)
 
-# Firebase Admin SDK - Mock for hackathon to avoid service account requirements
-import mock_firestore
-firestore.client = mock_firestore.get_db
-
+# Initialize Firebase (in background, non-blocking)
 try:
-    firebase_admin.initialize_app()
-except ValueError:
-    pass  # Already initialized
-
-db = firestore.client()
+    from firebase_client import init_firebase
+    init_firebase()
+except Exception as e:
+    print(f"Firebase init skipped: {e}")
 
 # Register Blueprints
 from routes.auth import auth_bp
@@ -47,7 +42,13 @@ app.register_blueprint(blockchain_bp, url_prefix='/api/blockchain')
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    return {'status': 'healthy', 'service': 'SecurePay AI', 'version': '1.0.0'}
+    from firebase_client import is_firebase_available
+    return {
+        'status': 'healthy', 
+        'service': 'SecurePay AI', 
+        'version': '2.0.0',
+        'firebase_connected': is_firebase_available()
+    }
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)

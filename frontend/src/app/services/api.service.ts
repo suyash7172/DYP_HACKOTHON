@@ -58,6 +58,12 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/predictions/batch`, {});
   }
 
+  uploadCSV(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.apiUrl}/predictions/upload-csv`, formData);
+  }
+
   // Blockchain
   logToBlockchain(transactionId: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/blockchain/log`, { transaction_id: transactionId });
@@ -73,5 +79,10 @@ export class ApiService {
 
   batchLogToBlockchain(): Observable<any> {
     return this.http.post(`${this.apiUrl}/blockchain/batch-log`, {});
+  }
+
+  // Firebase Status
+  getFirebaseStatus(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/auth/firebase-status`);
   }
 }

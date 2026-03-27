@@ -68,6 +68,12 @@ import { ApiService } from '../../services/api.service';
         <span class="material-icons-outlined">check_circle</span>
         {{ successMsg }}
       </div>
+      
+      <!-- Error message -->
+      <div class="toast error" *ngIf="errorMsg">
+        <span class="material-icons-outlined">error_outline</span>
+        {{ errorMsg }}
+      </div>
 
       <!-- Table -->
       <div class="card table-card">
@@ -200,6 +206,7 @@ export class TransactionsComponent implements OnInit {
   simulating = false;
   filterStatus = '';
   successMsg = '';
+  errorMsg = '';
 
   constructor(private api: ApiService) {}
 
@@ -207,14 +214,19 @@ export class TransactionsComponent implements OnInit {
 
   loadTransactions() {
     this.loading = true;
+    this.errorMsg = '';
     this.api.getTransactions(100, this.filterStatus || undefined).subscribe({
       next: (res) => { this.transactions = res.transactions; this.loading = false; },
-      error: () => { this.loading = false; }
+      error: (err) => { 
+        this.loading = false; 
+        this.showError(err.error?.message || err.error?.error || 'Failed to load transactions');
+      }
     });
   }
 
   simulate() {
     this.simulating = true;
+    this.errorMsg = '';
     this.api.simulateTransactions(this.simulateCount).subscribe({
       next: (res) => {
         this.showSimulate = false;
@@ -222,19 +234,24 @@ export class TransactionsComponent implements OnInit {
         this.showSuccess(`${res.count} transactions simulated`);
         this.loadTransactions();
       },
-      error: () => { this.simulating = false; }
+      error: (err) => { 
+        this.simulating = false; 
+        this.showError(err.error?.message || err.error?.error || 'Simulation failed');
+      }
     });
   }
 
   flagTx(id: string) {
     this.api.flagTransaction(id).subscribe({
-      next: () => { this.showSuccess('Transaction flagged'); this.loadTransactions(); }
+      next: () => { this.showSuccess('Transaction flagged'); this.loadTransactions(); },
+      error: (err) => this.showError(err.error?.message || err.error?.error || 'Failed to flag transaction')
     });
   }
 
   logToBlockchain(id: string) {
     this.api.logToBlockchain(id).subscribe({
-      next: () => { this.showSuccess('Logged to blockchain'); this.loadTransactions(); }
+      next: () => { this.showSuccess('Logged to blockchain'); this.loadTransactions(); },
+      error: (err) => this.showError(err.error?.message || err.error?.error || 'Failed to log to blockchain')
     });
   }
 
@@ -249,5 +266,10 @@ export class TransactionsComponent implements OnInit {
   showSuccess(msg: string) {
     this.successMsg = msg;
     setTimeout(() => this.successMsg = '', 3000);
+  }
+
+  showError(msg: string) {
+    this.errorMsg = msg;
+    setTimeout(() => this.errorMsg = '', 4000);
   }
 }

@@ -95,7 +95,13 @@ import { ApiService } from '../../services/api.service';
             Analysis Results
           </h3>
           
-          <div class="empty-state" *ngIf="!analysisResult">
+          <!-- Error State -->
+          <div class="error-msg" *ngIf="errorMessage">
+            <span class="material-icons-outlined">error_outline</span>
+            {{ errorMessage }}
+          </div>
+
+          <div class="empty-state" *ngIf="!analysisResult && !errorMessage">
             <span class="material-icons-outlined" style="font-size: 56px; opacity: 0.2">psychology</span>
             <p>Enter transaction details and run analysis</p>
           </div>
@@ -197,6 +203,8 @@ import { ApiService } from '../../services/api.service';
     
     .empty-state { padding: 60px 20px; text-align: center; color: var(--text-muted); }
     
+    .error-msg { margin: 24px; padding: 16px; background: rgba(239,68,68,0.1); color: #ef4444; border-radius: 8px; border-left: 4px solid #ef4444; display: flex; align-items: center; gap: 12px; font-weight: 500; font-size: 15px; }
+    
     .spinner-small { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: rotate 0.6s linear infinite; display: inline-block; }
   `]
 })
@@ -225,6 +233,7 @@ export class FraudDetectionComponent implements OnInit {
   analyzing = false;
   batchRunning = false;
   batchResults: any = null;
+  errorMessage: string = '';
 
   constructor(private api: ApiService) {}
 
@@ -232,18 +241,27 @@ export class FraudDetectionComponent implements OnInit {
 
   analyzeTransaction() {
     this.analyzing = true;
+    this.errorMessage = '';
+    this.analysisResult = null;
     this.api.analyzeTransaction(this.txInput).subscribe({
       next: (res) => { this.analysisResult = res; this.analyzing = false; },
-      error: () => { this.analyzing = false; }
+      error: (err) => { 
+        this.analyzing = false; 
+        this.errorMessage = err.error?.message || err.error?.error || 'Analysis failed. Please try again.';
+      }
     });
   }
 
   runBatchAnalysis() {
     this.batchRunning = true;
     this.batchResults = null;
+    this.errorMessage = '';
     this.api.batchAnalyze().subscribe({
       next: (res) => { this.batchResults = res; this.batchRunning = false; },
-      error: () => { this.batchRunning = false; }
+      error: (err) => { 
+        this.batchRunning = false; 
+        this.errorMessage = err.error?.message || err.error?.error || 'Batch analysis failed.';
+      }
     });
   }
 
